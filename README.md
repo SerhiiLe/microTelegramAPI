@@ -1,16 +1,31 @@
 # microTelegramAPI
-simple Telegram API for Arduino
+A simple asynchronous basic implementation of the Telegram API for Arduino
 
-Несмотря на то, что этот код уже работает в реальных проектах, но ещё требует доработки.
-Пока это не готовое решение. Как только библиотека будет готова, я уберу это предупреждение.
+Простая асинхронная базовая реализация Telegram API для Arduino
+
+## Table of Contents
+
+1. [Description](#-description) - An overview of the microTelegramAPI library.
+2. [Installation](#-installation) - How to install the library using Arduino or PlatformIO.
+3. [Usage](#-usage) - Basic usage examples for the SSLClient library.
+4. [Overview of Functions](#-object-methods) - An overview of the API.
 
 ## Description
 
-Description in English coming soon
+A very simple library for implementing sending and receiving messages via Telegram.
+It only has a few functions:
+- send messages
+- receive messages
+- display a menu
+- delete messages
+
+These are the minimum functions needed to create a bot for remote control of microcontrollers.
+
+The library isn't tied to a specific transport and can therefore work with both WiFi and a GSM modem, among other options. To work, the following link is required: "lower-layer transport" -> "SSL encapsulation" -> "the library itself."
 
 ## Описание
-Очень простая библиотека для реализации отправки сообщений в Телеграм.  
-Умеет всего пару функций:
+Очень простая библиотека для реализации отправки приёма сообщений через Телеграм.  
+Умеет всего несколько функций:
 - отправлять сообщения
 - принимать сообщения
 - отображать меню
@@ -22,42 +37,133 @@ Description in English coming soon
 
 Если нужен более богатый функционал, то можно использовать подобрать что-то более другое. Наверное. Когда я пробовал другие библиотеки, то они хорошо работали через WiFi, но ломались на GSM, хотя по описанию должны были с ним работать. Я не старался объять необъятное, а реализовал только те функции, которые мне были реально нужны, например возможность вызывать функцию проверки соединения.
 
-Основная проблема всех библиотек, включая мою, в том, что они жестко привязаны к какому либо транспорту. Реально под капотом всех библитек используется связка "транспорт нижнего уровня" -> "инкапсуляция SSL" -> "собственно библиотека". Первый уровень привязан к платформе. Обычно это "HTTPClient.h", но может быть что-то другое, например "TinyGsmClient.h". К нему должен подключаться библиотека, которая понимает нижний уровень, например "WiFiClientSecure.h" или "SSLClient.h". И несмотря на общие названия они могут иметь разных авторов и разную реализацию. И вот по верх всего этого работает билиотека с telegram API. И она должна понимать, как работать с более низким уровнем. Я пока думаю над решением этой проблемы.
+Основная проблема всех библиотек в том, что они жестко привязаны к какому либо транспорту. Реально под капотом всех библитек используется связка "транспорт нижнего уровня" -> "инкапсуляция SSL" -> "собственно библиотека". Первый уровень привязан к платформе. Обычно это "WiFi.h", но может быть что-то другое, например "TinyGsmClient.h". К нему должен подключаться библиотека, которая понимает нижний уровень, например "WiFiClientSecure.h" или "SSLClient.h". И несмотря на общие названия они могут иметь разных авторов и разную реализацию. И вот по верх всего этого работает билиотека с telegram API.
+
+## Installation
+
+For ArduinoIDE, download the library archive and unzip it to the Arduino/library folder. The ArduinoJson library must be installed from the ArduinoIDE library manager.
+
+For PlatformIO, add it to platformio.ini  
+```
+lib_deps =
+    https://github.com/bblanchon/ArduinoJson
+    https://github.com/SerhiiLe/microTelegramAPI
+```
+
+## Установка
+
+Для ArduinoIDE - скачать архив с библиотекой и развернуть в папку Arduino/librarie . Для работы должна быть установлена библиотека ArduinoJson из менеджера библиотек ArduinoIDE.
+
+Для PlatformIO надо добавить в platformio.ini   
+```
+lib_deps =
+    https://github.com/bblanchon/ArduinoJson
+    https://github.com/SerhiiLe/microTelegramAPI
+```
+
+## Usage
+
+If you're only working with the ESP8266/ESP32, it's better to use the TelegramESP wrapper.
+
+```cpp
+#include <TelegramESP.h>
+TelegramESP bot;
+```
+
+More details in the [Full_ESP](https://github.com/SerhiiLe/microTelegramAPI/tree/main/examples/Full_ESP) example
+
+To work with non-standard transport, you must initialize the library yourself.
+
+```cpp
+#include <TelegramESP.h>
+#include <WiFiClient.h>
+// Configure TinyGSM library
+#define TINY_GSM_MODEM_SIM800 // Modem is SIM800
+#define TINY_GSM_RX_BUFFER 1024 // Set RX buffer to 1Kb
+#include <TinyGsmClient.h> // must be after specifying the modem type used
+
+// Layers stack
+TinyGsm modem(gsmSerial);
+TinyGsmClient gsmTransportLayer(modem);
+SSLClient securePresentationLayer(&gsmTransportLayer);
+
+TelegramAPI<SSLClient> bot(securePresentationLayer);
+```
+
+For more details, see the example [On_SSLClient](https://github.com/SerhiiLe/microTelegramAPI/tree/main/examples/On_SSLClient)
+
+The library is not platform-specific, but libraries providing transport and encryption can be. In the examples, this is the ESP32.
 
 ## Использование
 
-Немного позже добавлю... С примерами.
-
-### Методы
+Если работа будет тоолько с ESP8266/ESP32, то лучше использовать обёртку TelegramESP
 
 ```cpp
-// Конструктор
+#include <TelegramESP.h>
+TelegramESP bot;
+```
+
+Детальнее в примере [Full_ESP](https://github.com/SerhiiLe/microTelegramAPI/tree/main/examples/Full_ESP)
+
+Для работы с нестандартным транспортом надо самомстоятельно инициализировать библиотеку
+
+```cpp
+#include <TelegramESP.h>
+#include <WiFiClient.h>
+// Configure TinyGSM library
+#define TINY_GSM_MODEM_SIM800   // Modem is SIM800
+#define TINY_GSM_RX_BUFFER 1024 // Set RX buffer to 1Kb
+#include <TinyGsmClient.h>  // должен быть после указания, какой тип модема используется
+
+// Layers stack
+TinyGsm modem(gsmSerial);
+TinyGsmClient gsmTransportLayer(modem);
+SSLClient securePresentationLayer(&gsmTransportLayer);
+
+TelegramAPI<SSLClient> bot(securePresentationLayer);
+```
+
+Детальнее в примере [On_SSLClient](https://github.com/SerhiiLe/microTelegramAPI/tree/main/examples/On_SSLClient)
+
+Библиотека не привязана к конкретной платформе, но библиотеки обеспечивающие транспорт и шифрования могут быть привязаны. В примерах это ESP32.
+
+### Object methods
+
+```cpp
+// Конструктор / Constructor
 TelegramAPI(SSLClient& sslClient)
 
+// Install a token, it won't work without it.
 // установить токен, без него работать не будет	(String)
 void setBotToken(const String& token)
 // установить токен, без него работать не будет
 void setBotToken(const char* token)
 
+// Set the default chat ID. This is only used for sending messages; it replies to everyone.
 // установить ID чата по умолчанию. Именно в него будут отправляться уведомления. Отвечать бот будет тот чат из которого пришел запрос
 void setChatID(int64_t chatID)
 
+// Polling period in seconds. Each installation resets the countdown timer.
 // период опроса в секундах. Каждая установка сбрасывает время отсчёта.
 void setInterval(int interval)
 
+// attach a message handler
 // подключение обработчика сообщений
 void attachCallback(String (*handler)(TResult& tr))
 // отключение обработчика сообщений
 void detachCallback()
 
+// Attaching a connection status check function
 // подключение функции проверки состояния соединения
 void attachCheckConnection(bool (*handler)())
 // отключение функции проверки состояния соединения
 void detachCheckConnection()
 
+// skip unread messages
 // пропустить непрочитанные сообщения
 void skipUpdates()
 
+// Sending a message to a specified chat
 // Отправка сообщения в указанный напрямую чат
 bool sendMessage(int64_t chatId, const char* message)
 // Отправка сообщения в указанный напрямую чат (String)
@@ -67,6 +173,7 @@ bool sendMessage(const char* message)
 // Отправка сообщения в указанный setChatID чат (String)
 bool sendMessage(const String message)
 
+// Delete messages with the specified IDs from the specified chat
 // Удаление сообщений с указанными ID из указанного чата. Список ID в формате: {20,21,22}
 bool deleteMessages(int64_t chatId, std::initializer_list<int64_t> messageIDs)
 // Удаление сообщений с указанными ID из указанного чата по умолчанию. Список ID в формате: {20,21,22}
@@ -76,20 +183,33 @@ bool deleteMessage(int64_t chatId, int64_t messageId)
 // Удаление одного сообщения по его ID из чата с chat_id по умолчанию
 bool deleteMessage(int64_t messageId)
 
+// Check for new messages. By this point, the message handling function attachCallback must be attached.
+// Returns the number of messages received, or <0 if an error occurred.
 // Проверка новых сообщеий. К этотму моменту должена быть установлена функция для обработки сообщений attach
 // возвращает число полученных сообщений, или <0 если ошибка
 int checkMessage(bool force=false)
 ```
 
+There's no separate method for adding a menu (keyboard). Instead, you need to use the [MENU] tag in your bot's message.
+
 Для добавления меню (клавиатура) нет отделного метода. Вместо этого в сообщении от бота надо использовать тег [MENU]
 
 ```cpp
+// Sends text and creates a menu with two lines and four items.
+// \t - new item (button), \n - first item of the new line
 // отошлёт тект и создаст меню из двух строк и четырёх пунктов.
 // \t - новый пукт (кнопка), \n - первый пункт новой строки
-bot.sendMessage("просто какой-то текст[MENU]первый пункт\tвторой пункт\nвторая строка\tчетвёртый пункт");
+bot.sendMessage("just some text[MENU]first item \t second item \n second line \t fourth item");
 
+// removes the menu by printing the text
 // удалит меню, напечатав текст
-bot.sendMessage("просто какой-то текст[MENU]");
+bot.sendMessage("just some text[MENU]");
 ```
 
+The callback function is required to process incoming messages. It must be of the String type, and its return value will be sent as a response to the same chat from which the request originated. The logic is that the bot must respond to any request.
+
 Callback функция нужна для обработки входящий сообщений, она должна быть типа String и то, что она вернёт будет отправлено как ответ в тот-же чат, из которого пришёл запрос. Логика в том, что на любой запрос бот обязан ответить.
+
+## LICENSE
+
+LGPL-3.0 license

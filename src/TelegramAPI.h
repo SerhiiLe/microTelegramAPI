@@ -4,7 +4,6 @@
 #include <Arduino.h>
 #define ARDUINOJSON_USE_LONG_LONG 1
 #include <ArduinoJson.h>
-#include <SSLClient.h>
 
 #define API_HOST "api.telegram.org"
 #define API_PORT 443
@@ -32,12 +31,13 @@ struct TResult {
 	String from;
 };
 
+template <typename SSLTransport>
 class TelegramAPI {
 
 	public:
 
 	// Конструктор
-	TelegramAPI(SSLClient& sslClient) : client(sslClient), apiHost(API_HOST)
+	TelegramAPI(SSLTransport& sslClient) : client(sslClient), apiHost(API_HOST)
 	{}
 
 	// установить токен, без него работать не будет	(String)
@@ -215,30 +215,32 @@ class TelegramAPI {
 		serializeJson(doc, jsonPayload);
 
 		ApiResult ar = apiRequest(F("getUpdates"), jsonPayload);
-		if ( ar.result )
-		for (JsonObject upd : ar.json[F("result")].as<JsonArray>()) {
-		    int64_t uid = upd[F("update_id")].as<int64_t>();
-		    if (uid <= lastUpdateId) continue;
-    		lastUpdateId = uid;
+		if ( ar.result ) {
+			JsonArray all_msg = ar.json[F("result")];
+			for (JsonObject upd : all_msg) {
+				int64_t uid = upd[F("update_id")].as<int64_t>();
+				if (uid <= lastUpdateId) continue;
+				lastUpdateId = uid;
 
-		    if (upd[F("message")].is<JsonObject>()) {
-				JsonObject msg = upd[F("message")];
-				TResult r;
-				r.chatId    = msg[F("chat")][F("id")].as<int64_t>();
-				r.messageId = msg[F("message_id")].as<int64_t>();
-				r.text      = msg[F("text")]                  | "";
-				r.from      = msg[F("from")][F("first_name")] | "";
+				if (upd[F("message")].is<JsonObject>()) {
+					JsonObject msg = upd[F("message")];
+					TResult r;
+					r.chatId    = msg[F("chat")][F("id")].as<int64_t>();
+					r.messageId = msg[F("message_id")].as<int64_t>();
+					r.text      = msg[F("text")]                  | "";
+					r.from      = msg[F("from")][F("first_name")] | "";
 
-				LOG_TELEGRAM_API(printf_P, PSTR("[MSG] %s (%lld): %s\n"), r.from.c_str(), r.chatId, r.text.c_str());
-				if (_callback) {
-					TELEGRAM_DELAY(10);
-					String toSend = _callback(r);
-					if (toSend.length() > 0) {
-						TELEGRAM_DELAY(30); // небольшая задержка между приёмом и отправкой сообщения (>30ms), за одно сброс watchdog
-						sendMessage(r.chatId, toSend);
+					LOG_TELEGRAM_API(printf_P, PSTR("[MSG] %s (%lld): %s\n"), r.from.c_str(), r.chatId, r.text.c_str());
+					if (_callback) {
+						TELEGRAM_DELAY(10);
+						String toSend = _callback(r);
+						if (toSend.length() > 0) {
+							TELEGRAM_DELAY(30); // небольшая задержка между приёмом и отправкой сообщения (>30ms), за одно сброс watchdog
+							sendMessage(r.chatId, toSend);
+						}
 					}
+					result++;
 				}
-				result++;
 			}
 		}
 		else return -1; 
@@ -375,7 +377,8 @@ class TelegramAPI {
 		nextUpdate = lastUpdate + updatePeriod;
 	}
 
-	SSLClient& client;    // Ссылка на SSLClient
+	SSLTransport& client;    // Ссылка на SSLClient
+
 	String _botToken;
 	const int maxRetries = 3; // Максимум попыток при ошибке соединения
 	const int retryDelay = 1000; // Задержка между попытками (мс)
