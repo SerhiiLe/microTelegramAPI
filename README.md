@@ -5,10 +5,10 @@ A simple asynchronous basic implementation of the Telegram API for Arduino
 
 ## Table of Contents
 
-1. [Description](#-description) - An overview of the microTelegramAPI library.
-2. [Installation](#-installation) - How to install the library using Arduino or PlatformIO.
-3. [Usage](#-usage) - Basic usage examples for the SSLClient library.
-4. [Overview of Functions](#-object-methods) - An overview of the API.
+1. [Description](#description) - An overview of the microTelegramAPI library.
+2. [Installation](#installation) - How to install the library using Arduino or PlatformIO.
+3. [Usage](#usage) - Basic usage examples for the SSLClient library.
+4. [Overview of Functions](#object-methods) - An overview of the API.
 
 ## Description
 
