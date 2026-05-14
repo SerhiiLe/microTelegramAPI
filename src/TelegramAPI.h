@@ -143,7 +143,7 @@ class TelegramAPI {
 		return r.result; // при отправке в общем то и проверять нечего... Может потом придумаю.
 	}
 	// Отправка сообщения в указанный напрямую чат (String)
-	bool sendMessage(int64_t chatId, const String message) {
+	bool sendMessage(int64_t chatId, const String& message) {
 		return sendMessage(chatId, message.c_str());
 	}
 	// Отправка сообщения в указанный setChatID чат
@@ -151,7 +151,7 @@ class TelegramAPI {
 		return _chatId > 0 ? sendMessage(_chatId, message): false;
 	}
 	// Отправка сообщения в указанный setChatID чат (String)
-	bool sendMessage(const String message) {
+	bool sendMessage(const String& message) {
 		return _chatId > 0 ? sendMessage(_chatId, message.c_str()): false;
 	}
 
@@ -237,7 +237,7 @@ class TelegramAPI {
 						String toSend = _callback(r);
 						if (toSend.length() > 0) {
 							TELEGRAM_DELAY(30); // небольшая задержка между приёмом и отправкой сообщения (>30ms), за одно сброс watchdog
-							sendMessage(r.chatId, toSend);
+							sendMessage(r.chatId, toSend.c_str());
 						}
 					}
 					result++;
@@ -285,8 +285,8 @@ class TelegramAPI {
 		return true;
 	}
 	// отослать сообщения всем, кто в списке номеров разделённых запятыми
-	bool sendMessageToAll(const String& whiteList, const String message) {
-		return sendMessage(whiteList, message.c_str());
+	bool sendMessageToAll(const String& whiteList, const String& message) {
+		return sendMessageToAll(whiteList, message.c_str());
 	}
 
 	// Принимать сообщения только от чата указанного в chatId
