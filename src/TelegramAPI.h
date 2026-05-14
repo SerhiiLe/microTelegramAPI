@@ -232,6 +232,7 @@ class TelegramAPI {
 
 					LOG_TELEGRAM_API(printf_P, PSTR("[MSG] %s (%lld): %s\n"), r.from.c_str(), r.chatId, r.text.c_str());
 					if (_callback) {
+						if (strict && _chatId && r.chatId != _chatId) continue; // пришло сообщение не из чата по умолчанию
 						TELEGRAM_DELAY(10);
 						String toSend = _callback(r);
 						if (toSend.length() > 0) {
@@ -246,6 +247,50 @@ class TelegramAPI {
 		else return -1; 
 		return result;
 	}
+
+	// проверка, есть ли чат в списке разрешенных
+	bool isWhitelisted(const int64_t& chatId, const String& whiteList) {
+		// простая, но не точная реализация
+		return (chatId && whiteList.length() > 0 && whiteList.indexOf(String(chatId)) >= 0);
+	}
+
+	// только первый номер из списка чатов
+	int64_t extractFirstNumber(String whiteList) {
+		whiteList.trim();
+		return whiteList.toInt();
+	}
+
+	// отослать сообщения всем, кто в списке. Список - строка с числами разделённая запятыми
+	bool sendMessageToAll(const String& whiteList, const char* message) {
+		int pos1 = 0, pos2 = 0;
+		pos2 = whiteList.indexOf(",", pos1);
+		while ( pos2 >=0 ) {
+			// нашли запятую :)
+			String tmp = whiteList.substring(pos1, pos2);
+			tmp.trim();
+			int64_t id = tmp.toInt();
+			if (id)
+				if (!sendMessage(id, message)) return false;
+			pos1 = pos2+1;
+			pos2 = whiteList.indexOf(",", pos1);
+			TELEGRAM_DELAY(30); // Звдержка, чтобы не попасть на бан от Telegram за слишком быструю рассылку.
+		}
+		// Последнее число в списке
+		String tmp = whiteList.substring(pos1);
+		tmp.trim();
+		int64_t id = tmp.toInt();
+		if (id)
+			if (!sendMessage(id, message)) return false;
+
+		return true;
+	}
+	// отослать сообщения всем, кто в списке номеров разделённых запятыми
+	bool sendMessageToAll(const String& whiteList, const String& message) {
+		return sendMessage(whiteList, message.c_str());
+	}
+
+	// Принимать сообщения только от чата указанного в chatId
+	bool strict = false;
 
 	private:
 
@@ -281,24 +326,40 @@ class TelegramAPI {
 			client.print(request);
 
 			uint32_t timeout = millis() + 10000L;
-			bool body = false;
+			int contentLength = -1;
+			
 			// ожидание соединения с сервером
 			while (client.connected() && !client.available() && (millis() < timeout))
 				TELEGRAM_DELAY(10);
-			// ответ получен, чтение
-			while (client.available() > 0) {
-				if( body ) {
-					// тупой и грязный способ формирования строки, но в конкретном случае он самый быстрый
-					while (client.available()) {
-						char c = client.read();
-						response += c;
-					}
-				} else
-					response = client.readStringUntil('\n');
+
+			// ответ получен, чтение. Если ответ не получен и был таймаут, то дальше каскадом дойдёт до выхода "Network error"
+			while (client.connected() || client.available()) {
+				// чтение заголовков, построчно
+				response = client.readStringUntil('\n');
 
 				if ( response.startsWith(F("HTTP/1")) ) statusCode = getHttpStatusCode(response); // поиск статуса во всех строках, но сработает только в первой
-				if ( response.length() < 3 ) body = true; // пустая строка отделяет заголовок от тела. Может содержать пару символов '\r'
+				if ( response.startsWith(F("Content-Length: ")) ) contentLength = response.substring(16).toInt() + 1; // впереди будет один лишний '\n'
+				if ( response.length() < 2 ) break; // пустая строка отделяет заголовок от тела. Cодержит пару символов '\r\n', один из них уже вырезан
 			}
+
+			if (contentLength > 0) {
+				// Получен нормальный ответ, осталось его прочесть
+				response.reserve(contentLength);
+				while ((int)response.length() < contentLength) {
+					if (client.available()) {
+						response += (char)client.read();
+					} else if (millis() > timeout) {
+						break; // таймаут при чтении тела, лимит на 10 секунд от _начала_ запроса 
+					}
+				}
+			} else {
+				// Не получен нормальный ответ с Content-Length, вероятно ошибка сети
+				LOG_TELEGRAM_API(println, F("Network error"));
+				client.stop();
+				continue;
+			}
+
+			client.stop();
 
 			LOG_TELEGRAM_API(printf_P, PSTR("status code: %d\nanswer\n"), statusCode);
 			LOG_TELEGRAM_API(println, response);
@@ -312,14 +373,12 @@ class TelegramAPI {
 					LOG_TELEGRAM_API(printf_P, PSTR("Rate limit exceeded, retry after %d seconds\n"), retryAfter);
 					TELEGRAM_DELAY(retryAfter * 1000);
 				}
-				client.stop();
 				continue;
 			}
 
 			DeserializationError error = deserializeJson(responseDoc, response.c_str());
 			if (error) {
 			    LOG_TELEGRAM_API(printf_P, PSTR("deserializeJson() failed: %s\n"), error.f_str());
-				client.stop();
 				continue;
 			}
 
@@ -329,14 +388,11 @@ class TelegramAPI {
 				LOG_TELEGRAM_API(printf_P, PSTR("Telegram API error %d: %s\n"), errorCode, description.c_str());
 				if (errorCode == 401) {
 					LOG_TELEGRAM_API(println, PSTR("Invalid bot token, stopping"));
-					client.stop();
 					return {false, responseDoc}; // досрочное прерывание, нет смыла повторять запрос, если токен не принят
 				}
-				client.stop();
 				continue;
 			}
 
-			client.stop();
 			return {true, responseDoc};
 		}
 		// при ошибках запрос повторяется. Если дошло до этого блока, то все попытки завершились неудачей.

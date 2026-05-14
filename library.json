@@ -1,6 +1,6 @@
 {
   "name": "microTelegramAPI",
-  "keywords": "telegram, API, Arduino",
+  "keywords": "telegram, API, Arduino, GSM, GPRS",
   "description": "A very simple library implementing basic Telegram API functions.",
   "homepage": "https://github.com/SerhiiLe/microTelegramAPI",
   "repository": {
@@ -13,7 +13,7 @@
       "version": "^7.0.0"
     }
   ],
-  "version": "1.0.0",
+  "version": "1.1.0",
   "frameworks": "arduino",
   "platforms": "*"
 }

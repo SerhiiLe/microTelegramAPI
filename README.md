@@ -1,7 +1,7 @@
 # microTelegramAPI
-A simple asynchronous basic implementation of the Telegram API for Arduino
+A simple asynchronous basic implementation of the Telegram API for Arduino on GSM
 
-Простая асинхронная базовая реализация Telegram API для Arduino
+Простая асинхронная базовая реализация Telegram API для Arduino на GSM
 
 ## Table of Contents
 
@@ -23,6 +23,8 @@ These are the minimum functions needed to create a bot for remote control of mic
 
 The library isn't tied to a specific transport and can therefore work with both WiFi and a GSM modem, among other options. To work, the following link is required: "lower-layer transport" -> "SSL encapsulation" -> "the library itself."
 
+Fewer functions mean easier to use and takes up less memory.
+
 ## Описание
 Очень простая библиотека для реализации отправки приёма сообщений через Телеграм.  
 Умеет всего несколько функций:
@@ -35,9 +37,11 @@ The library isn't tied to a specific transport and can therefore work with both 
 
 Несмотря на то, что существует множество других библиотек, я не смог найти ту, которая сможет работать с любым транспортом. Конкретно мне нужена была работа с GSM модемом SIM800L. Пришлось делать самому. Библиотека, несмотря на простототу немного сложнее в использовании из-за того, что надо самостоятельно настраивать транспорт.
 
-Если нужен более богатый функционал, то можно использовать подобрать что-то более другое. Наверное. Когда я пробовал другие библиотеки, то они хорошо работали через WiFi, но ломались на GSM, хотя по описанию должны были с ним работать. Я не старался объять необъятное, а реализовал только те функции, которые мне были реально нужны, например возможность вызывать функцию проверки соединения.
+Если нужен более богатый функционал, то можно подобрать что-то более функциональное. Наверное. Когда я пробовал другие библиотеки, то они хорошо работали через WiFi, но ломались на GSM, хотя по описанию должны были с ним работать. Я не старался объять необъятное, а реализовал только те функции, которые мне были реально нужны, например возможность вызывать функцию проверки соединения.
 
 Основная проблема всех библиотек в том, что они жестко привязаны к какому либо транспорту. Реально под капотом всех библитек используется связка "транспорт нижнего уровня" -> "инкапсуляция SSL" -> "собственно библиотека". Первый уровень привязан к платформе. Обычно это "WiFi.h", но может быть что-то другое, например "TinyGsmClient.h". К нему должен подключаться библиотека, которая понимает нижний уровень, например "WiFiClientSecure.h" или "SSLClient.h". И несмотря на общие названия они могут иметь разных авторов и разную реализацию. И вот по верх всего этого работает билиотека с telegram API.
+
+И как бонус, за счёт очень маленьгого функционала и маленького кода занимает меньше памяти. Так переход с FastBot на плате esp8266 дал экономию в 6k RAM и лучшую стабильность работы.
 
 ## Installation
 
@@ -75,8 +79,7 @@ More details in the [Full_ESP](https://github.com/SerhiiLe/microTelegramAPI/tree
 To work with non-standard transport, you must initialize the library yourself.
 
 ```cpp
-#include <TelegramESP.h>
-#include <WiFiClient.h>
+#include <TelegramAPI.h>
 // Configure TinyGSM library
 #define TINY_GSM_MODEM_SIM800 // Modem is SIM800
 #define TINY_GSM_RX_BUFFER 1024 // Set RX buffer to 1Kb
@@ -90,7 +93,7 @@ SSLClient securePresentationLayer(&gsmTransportLayer);
 TelegramAPI<SSLClient> bot(securePresentationLayer);
 ```
 
-For more details, see the example [On_SSLClient](https://github.com/SerhiiLe/microTelegramAPI/tree/main/examples/On_SSLClient)
+For more details, see the example [On_SSLClient_GSM](https://github.com/SerhiiLe/microTelegramAPI/tree/main/examples/On_SSLClient_GSM)
 
 The library is not platform-specific, but libraries providing transport and encryption can be. In the examples, this is the ESP32.
 
@@ -108,8 +111,7 @@ TelegramESP bot;
 Для работы с нестандартным транспортом надо самомстоятельно инициализировать библиотеку
 
 ```cpp
-#include <TelegramESP.h>
-#include <WiFiClient.h>
+#include <TelegramAPI.h>
 // Configure TinyGSM library
 #define TINY_GSM_MODEM_SIM800   // Modem is SIM800
 #define TINY_GSM_RX_BUFFER 1024 // Set RX buffer to 1Kb
@@ -123,7 +125,7 @@ SSLClient securePresentationLayer(&gsmTransportLayer);
 TelegramAPI<SSLClient> bot(securePresentationLayer);
 ```
 
-Детальнее в примере [On_SSLClient](https://github.com/SerhiiLe/microTelegramAPI/tree/main/examples/On_SSLClient)
+Детальнее в примере [On_SSLClient_GSM](https://github.com/SerhiiLe/microTelegramAPI/tree/main/examples/On_SSLClient_GSM)
 
 Библиотека не привязана к конкретной платформе, но библиотеки обеспечивающие транспорт и шифрования могут быть привязаны. В примерах это ESP32.
 
@@ -184,10 +186,31 @@ bool deleteMessage(int64_t chatId, int64_t messageId)
 bool deleteMessage(int64_t messageId)
 
 // Check for new messages. By this point, the message handling function attachCallback must be attached.
-// Returns the number of messages received, or <0 if an error occurred.
+// Returns the number of messages received, or -1 if an error occurred.
 // Проверка новых сообщеий. К этотму моменту должена быть установлена функция для обработки сообщений attach
-// возвращает число полученных сообщений, или <0 если ошибка
+// возвращает число полученных сообщений, или -1 если ошибка
 int checkMessage(bool force=false)
+
+// Additional, optional methods for working with lists of chat numbers
+// Дополнительные, не обязательные методы для работы со списками номеров чатов
+
+// check if the chat is in the allowed list
+// Проверка, есть ли чат в списке разрешенных
+bool isWhitelisted(const int64_t& chatId, const String& whiteList)
+
+// Only the first number from the chat list
+// Только первый номер из списка чатов
+int64_t extractFirstNumber(String whiteList)
+
+// Send messages to everyone on the list. List is a string of numbers separated by commas.
+// Отослать сообщения всем, кто в списке. Список - строка с числами разделённая запятыми
+bool sendMessageToAll(const String& whiteList, const char* message)
+// Отослать сообщения всем, кто в списке номеров разделённых запятыми
+bool sendMessageToAll(const String& whiteList, const String& message)
+
+// Accept messages only from the chat specified in chatId
+// Принимать сообщения только от чата указанного в chatId
+bool strict = false
 ```
 
 There's no separate method for adding a menu (keyboard). Instead, you need to use the [MENU] tag in your bot's message.
@@ -209,6 +232,13 @@ bot.sendMessage("just some text[MENU]");
 The callback function is required to process incoming messages. It must be of the String type, and its return value will be sent as a response to the same chat from which the request originated. The logic is that the bot must respond to any request.
 
 Callback функция нужна для обработки входящий сообщений, она должна быть типа String и то, что она вернёт будет отправлено как ответ в тот-же чат, из которого пришёл запрос. Логика в том, что на любой запрос бот обязан ответить.
+
+## Changes
+
+v1.1.0
+The "strict" property controls whether a user can reply to all messages or only those from a designated chat. However, this isn't always convenient, so the "isWhitelisted" and "extractFirstNumber" methods have been added, allowing you to build your own security database. The sendMessageToAll method has also been added for sending messages to multiple chats listed in a regular string. The numbers must be separated by a comma. If the number is one, it will work similarly to sendMessage, but the number will be in a String rather than an int64_t.
+
+Разрешение отвечать на все сообщения или только из назначенного чата регулируется свойством "strict". Но это не всегда удобно, по этому добавлены методы "isWhitelisted" и "extractFirstNumber", с помощью которых можно построить свою могику безопасности. Так-же добавлен метод sendMessageToAll для рассылки в несколько чатов по списку в обычной строке. Номера должны быть разделены запятой. Если номер один, то будет работать аналогично sendMessage, но номер не в int64_t, а в String.
 
 ## LICENSE
 

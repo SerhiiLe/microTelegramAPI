@@ -1,7 +1,7 @@
 #define DEBUG
 
 #include <Arduino.h>
-#include <TelegramESP.h>
+#include <TelegramAPI.h>
 #include <WiFiClient.h>
 
 // GovoroxSSLClient in ArduinoIDE, or https://github.com/govorox/SSLClient , ESP32 only

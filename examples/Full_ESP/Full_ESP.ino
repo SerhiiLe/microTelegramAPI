@@ -55,7 +55,12 @@ String callback(TResult &msg) {
     // The bot should always respond; if there is nothing to send, it should return an empty string: ""
     return "";
   }
-  return "Echo: " + msg.text + "\nFrom: " + msg.from + "\nChatID: " + String(msg.chatId) + "\nMessageID: " + String(msg.messageId);
+  return "Echo: " + msg.text + 
+    "\nFrom: " + msg.from + 
+    "\nChatID: " + String(msg.chatId) + 
+    "\nMessageID: " + String(msg.messageId) +
+    "\nIn White List: " + String( bot.isWhitelisted(msg.chatId, "1111111,2222222,3333333") ? "yes": "no" ); 
+                                                      // Replace 11111, 222222 and 33333 with real chat IDs
 }
 
 
@@ -78,6 +83,9 @@ void setup() {
   bot.setInterval(10);
   bot.attachCallback(callback);
 
+  // Accept messages only from the chat specified in chatId. Only if necessary.
+  bot.strict = true;
+
   // Отправка сообщения в чат по умолчани, установенный setChatID
   // Send a message to the default chat set by setChatID
   bot.sendMessage("first message");
@@ -85,7 +93,11 @@ void setup() {
   // Отправка сообщения в чат с нужным ID
   // Sending a message to the chat with the required ID
   bot.sendMessage(CHAT_ID, "target message");
-  
+
+  // Рассылка сообщения в несколько чатов. Замените 11111 и 222222 на реальные ID чатов
+  // Broadcasting a message to multiple chats. Replace 11111 and 222222 with real chat IDs
+  // bot.sendMessageToAll("1111111, 2222222", "test mass message");
+
 }
 
 void loop() {
