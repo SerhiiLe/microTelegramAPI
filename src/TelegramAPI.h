@@ -285,7 +285,7 @@ class TelegramAPI {
 		return true;
 	}
 	// отослать сообщения всем, кто в списке номеров разделённых запятыми
-	bool sendMessageToAll(const String& whiteList, const String& message) {
+	bool sendMessageToAll(const String& whiteList, const String message) {
 		return sendMessage(whiteList, message.c_str());
 	}
 
