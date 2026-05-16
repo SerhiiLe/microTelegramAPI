@@ -70,7 +70,7 @@ String callback(TResult &msg) {
     bot.deleteMessage(msg.messageId);
     return "delete 3 message and add one :)";
   }
-  if (msg.text == "menu") {
+  if (bot.is_command(msg.text, "menu")) { // both options, with / at the beginning and without ("menu"||"/menu")
     // Добавление меню из двух строк и четырёх пунктов
     // Adding a two-line, four-item menu
     return "add menu[MENU]hello\tnone\ndel\thide";

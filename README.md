@@ -41,11 +41,12 @@ Fewer functions mean easier to use and takes up less memory.
 
 Основная проблема всех библиотек в том, что они жестко привязаны к какому либо транспорту. Реально под капотом всех библитек используется связка "транспорт нижнего уровня" -> "инкапсуляция SSL" -> "собственно библиотека". Первый уровень привязан к платформе. Обычно это "WiFi.h", но может быть что-то другое, например "TinyGsmClient.h". К нему должен подключаться библиотека, которая понимает нижний уровень, например "WiFiClientSecure.h" или "SSLClient.h". И несмотря на общие названия они могут иметь разных авторов и разную реализацию. И вот по верх всего этого работает билиотека с telegram API.
 
-И как бонус, за счёт очень маленьгого функционала и маленького кода занимает меньше памяти. Так переход с FastBot на плате esp8266 дал экономию в 6k RAM и лучшую стабильность работы.
+И как бонус, за счёт очень маленьгого функционала и маленького кода занимает меньше памяти. Так переход с FastBot на плате esp8266 дал экономию в 8k RAM и более стабильную работу. Не скорость.
 
 ## Installation
 
-For ArduinoIDE, download the library archive and unzip it to the Arduino/library folder. The ArduinoJson library must be installed from the ArduinoIDE library manager.
+For ArduinoIDE, find "microTelegramAPI" in the library manager and install it.
+Alternatively, download the library archive and unzip it to the Arduino/library folder. The ArduinoJson library must be installed from the ArduinoIDE library manager for this to work.
 
 For PlatformIO, add it to platformio.ini  
 ```
@@ -56,7 +57,8 @@ lib_deps =
 
 ## Установка
 
-Для ArduinoIDE - скачать архив с библиотекой и развернуть в папку Arduino/librarie . Для работы должна быть установлена библиотека ArduinoJson из менеджера библиотек ArduinoIDE.
+Для ArduinoIDE - в менеджере библитек найти "microTelegramAPI" и установить.
+Или скачать архив с библиотекой и развернуть в папку Arduino/librarie . Для работы должна быть установлена библиотека ArduinoJson из менеджера библиотек ArduinoIDE.
 
 Для PlatformIO надо добавить в platformio.ini   
 ```
@@ -208,6 +210,10 @@ bool sendMessageToAll(const String& whiteList, const char* message)
 // Отослать сообщения всем, кто в списке номеров разделённых запятыми
 bool sendMessageToAll(const String& whiteList, const String& message)
 
+// both options, with / at the beginning and without
+// поиск параметра не зависимо от наличия "/" в начале
+bool is_command(const String& in, const String& command)
+
 // Accept messages only from the chat specified in chatId
 // Принимать сообщения только от чата указанного в chatId
 bool strict = false
@@ -233,12 +239,42 @@ The callback function is required to process incoming messages. It must be of th
 
 Callback функция нужна для обработки входящий сообщений, она должна быть типа String и то, что она вернёт будет отправлено как ответ в тот-же чат, из которого пришёл запрос. Логика в том, что на любой запрос бот обязан ответить.
 
+The function that will be assigned to the callback must be declared like this (any name):
+
+Функция которая будет назначена для callback должна быть объявлена так (название любое):
+
+```cpp
+String telegramCallback(TResult& msg);
+```
+
+В функцию передаётся структура TResult:
+
+```cpp
+struct TResult {
+	int64_t chatId;
+	int64_t messageId;
+	String text;
+	String from;
+};
+```
+
+The checkMessage method, called without parameters, runs according to its own schedule, set by the setInterval method. However, you can create your own schedule and call checkMessage(true), in which case the internal schedule is ignored.
+
+Метод checkMessage, вызванный без параметров, работает по собственному расписанию, установленному методом setInterval. Но можно сделать своё расписание и вызывать checkMessage(true), тогда внутреннее расписание игнорируется.
+
 ## Changes
 
-v1.1.0
+### v1.1.0
+
 The "strict" property controls whether a user can reply to all messages or only those from a designated chat. However, this isn't always convenient, so the "isWhitelisted" and "extractFirstNumber" methods have been added, allowing you to build your own security database. The sendMessageToAll method has also been added for sending messages to multiple chats listed in a regular string. The numbers must be separated by a comma. If the number is one, it will work similarly to sendMessage, but the number will be in a String rather than an int64_t.
 
 Разрешение отвечать на все сообщения или только из назначенного чата регулируется свойством "strict". Но это не всегда удобно, по этому добавлены методы "isWhitelisted" и "extractFirstNumber", с помощью которых можно построить свою могику безопасности. Так-же добавлен метод sendMessageToAll для рассылки в несколько чатов по списку в обычной строке. Номера должны быть разделены запятой. Если номер один, то будет работать аналогично sendMessage, но номер не в int64_t, а в String.
+
+### v1.1.1 (draft)
+
+Added an optional is_command method that allows you to find commands both with and without a leading /.
+
+Добавлен необязательный метод is_command, который позволяет находить команды как с / в начале, так и без.
 
 ## LICENSE
 
