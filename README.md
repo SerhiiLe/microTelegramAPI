@@ -1,7 +1,7 @@
 # microTelegramAPI
-A simple asynchronous basic implementation of the Telegram API for Arduino on GSM
+A simple basic implementation of the Telegram API for Arduino on GSM
 
-Простая асинхронная базовая реализация Telegram API для Arduino на GSM
+Простая базовая реализация Telegram API для Arduino на GSM
 
 ## Table of Contents
 
@@ -151,6 +151,10 @@ void setChatID(int64_t chatID)
 // период опроса в секундах. Каждая установка сбрасывает время отсчёта.
 void setInterval(int interval)
 
+// set a delay until the next poll, one-time
+// выставить задержку до следующего срабатывания, разово
+void setNext(uint32_t next = 0)
+
 // attach a message handler
 // подключение обработчика сообщений
 void attachCallback(String (*handler)(TResult& tr))
@@ -273,8 +277,10 @@ The "strict" property controls whether a user can reply to all messages or only 
 ### v1.1.1 (draft)
 
 Added an optional is_command method that allows you to find commands both with and without a leading /.
+Added an optional setNext method for setting a one-time delay before the next server poll.
 
 Добавлен необязательный метод is_command, который позволяет находить команды как с / в начале, так и без.
+Добавлен необязательный метод setNext, для разовой установки задержки перед очередеым опросом сервера.
 
 ## LICENSE
 

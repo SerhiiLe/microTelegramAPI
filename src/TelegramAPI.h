@@ -59,7 +59,12 @@ class TelegramAPI {
 		if ( interval > 1 ) updatePeriod = interval * 1000UL; // чаще, чем раз в секунду
 		resetTimer();
 	}
-	
+
+	// выставить задержку до следующего срабатывания, разово
+	void setNext(uint32_t next = 0) {
+		nextUpdate = millis() + (next * 1000UL);
+	}
+
 	// подключение обработчика сообщений
     void attachCallback(String (*handler)(TResult& tr)) {
         _callback = handler;
@@ -233,10 +238,10 @@ class TelegramAPI {
 					LOG_TELEGRAM_API(printf_P, PSTR("[MSG] %s (%lld): %s\n"), r.from.c_str(), r.chatId, r.text.c_str());
 					if (_callback) {
 						if (strict && _chatId && r.chatId != _chatId) continue; // пришло сообщение не из чата по умолчанию
-						TELEGRAM_DELAY(10);
+						TELEGRAM_DELAY(1);
 						String toSend = _callback(r);
 						if (toSend.length() > 0) {
-							TELEGRAM_DELAY(30); // небольшая задержка между приёмом и отправкой сообщения (>30ms), за одно сброс watchdog
+							TELEGRAM_DELAY(1); // небольшая задержка между приёмом и отправкой сообщения для сброса watchdog
 							sendMessage(r.chatId, toSend.c_str());
 						}
 					}
@@ -273,7 +278,6 @@ class TelegramAPI {
 				if (!sendMessage(id, message)) return false;
 			pos1 = pos2+1;
 			pos2 = whiteList.indexOf(",", pos1);
-			TELEGRAM_DELAY(30); // Звдержка, чтобы не попасть на бан от Telegram за слишком быструю рассылку.
 		}
 		// Последнее число в списке
 		String tmp = whiteList.substring(pos1);
@@ -435,8 +439,7 @@ class TelegramAPI {
 	}
 	// сброс таймера на установленный интервал
 	void resetTimer() {
-		lastUpdate = millis();
-		nextUpdate = lastUpdate + updatePeriod;
+		nextUpdate = millis() + updatePeriod;
 	}
 
 	SSLTransport& client;    // Ссылка на SSLClient
@@ -447,7 +450,7 @@ class TelegramAPI {
 	const int requestTimeout = 35000; // Таймаут для long polling (35 секунд, учитывая timeout=30)
 
 	int64_t lastUpdateId = 0, _chatId = 0;
-	uint32_t lastUpdate = 0, nextUpdate = 0;
+	uint32_t nextUpdate = 0;
 	uint32_t updatePeriod = 10000;
 	bool _overflow = false;
 
