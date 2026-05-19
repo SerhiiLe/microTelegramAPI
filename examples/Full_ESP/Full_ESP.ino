@@ -106,6 +106,10 @@ void loop() {
   // Check for new messages. If there are any, the registered callback function will be called. Must be in loop()
   bot.checkMessage();
 
+  // Если произошла ошибка при обращении к телеграм, то отложить следующий опрос на 5 минут (5*60=300)
+  // If an error occurs when accessing Telegram, delay the next request for 5 minutes (5 * 60 = 300).
+  // if (bot.checkMessage() < 1 ) bot.setNext(300);
+
   // Отправлять сообщения каждые 60 секунд
   // Send messages every 60 seconds
   static int count = 0;

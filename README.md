@@ -274,7 +274,7 @@ The "strict" property controls whether a user can reply to all messages or only 
 
 Разрешение отвечать на все сообщения или только из назначенного чата регулируется свойством "strict". Но это не всегда удобно, по этому добавлены методы "isWhitelisted" и "extractFirstNumber", с помощью которых можно построить свою могику безопасности. Так-же добавлен метод sendMessageToAll для рассылки в несколько чатов по списку в обычной строке. Номера должны быть разделены запятой. Если номер один, то будет работать аналогично sendMessage, но номер не в int64_t, а в String.
 
-### v1.1.1 (draft)
+### v1.1.1
 
 Added an optional is_command method that allows you to find commands both with and without a leading /.
 Added an optional setNext method for setting a one-time delay before the next server poll.
