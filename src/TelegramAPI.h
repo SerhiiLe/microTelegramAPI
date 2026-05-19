@@ -60,9 +60,9 @@ class TelegramAPI {
 		resetTimer();
 	}
 
-	// выставить задержку до следующего срабатывания, разово
+	// выставить задержку до следующего срабатывания, разово, в секундах
 	void setNext(uint32_t next = 0) {
-		nextUpdate = millis() + (next * 1000UL);
+		nextUpdate = millis() + (next ? next * 1000UL: updatePeriod);
 	}
 
 	// подключение обработчика сообщений
@@ -430,8 +430,7 @@ class TelegramAPI {
 	
 	// возвращает true, когда пришло время.
 	bool isReady() {
-		uint32_t time = millis();
-		if((int32_t)(time - nextUpdate) > 0) {
+		if((int32_t)(millis() - nextUpdate) > 0) {
 			resetTimer();
 			return true;
 		}

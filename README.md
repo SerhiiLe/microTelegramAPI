@@ -151,8 +151,8 @@ void setChatID(int64_t chatID)
 // период опроса в секундах. Каждая установка сбрасывает время отсчёта.
 void setInterval(int interval)
 
-// set a delay until the next poll, one-time
-// выставить задержку до следующего срабатывания, разово
+// set a delay until the next poll, one-time, in seconds. Calling without arguments resets the interval count.
+// выставить задержку до следующего срабатывания, разово, в секундах. Вызов без аргументов сбрасыввает отсчёт интервала.
 void setNext(uint32_t next = 0)
 
 // attach a message handler
