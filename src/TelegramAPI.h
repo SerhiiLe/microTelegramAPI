@@ -101,7 +101,7 @@ class TelegramAPI {
 		const char *menu = "[MENU]";
 		char* token = strstr(message, menu);
 		if (token) { // похоже это строка с меню
-			char text[strlen(message)+1]; // выделили память под капию строки
+			char text[strlen(message)+1]; // выделили память под копию строки
 			strcpy(text, message); // скопировали, теперь можно уточнять запрос и разбирать на токены
 			char* source = text;
 
@@ -202,7 +202,7 @@ class TelegramAPI {
 		return _chatId > 0 ? deleteMessage(_chatId, messageId): false;
 	}
 
-	// Проверка новых сообщеий. К этотму моменту должена быть установлена функция для обработки сообщений attach
+	// Проверка новых сообщений. К этому моменту должна быть установлена функция для обработки сообщений attach
 	// возвращает число полученных сообщений, или <0 если ошибка
 	int checkMessage(bool force=false) {
 		int result = 0;
@@ -310,7 +310,7 @@ class TelegramAPI {
 	};
 
 	// запрос к API telegram. Всегда POST, в payload должна быть сформированная строка Json
-	// в type должна бытьвызываемую функцию: sendMessage, getUpdates...
+	// в type должна быть вызываемая функция: sendMessage, getUpdates...
 	ApiResult apiRequest(const String &type, const String &payload) {
 		int statusCode = -1;
 		String response;
@@ -349,7 +349,7 @@ class TelegramAPI {
 
 				if ( response.startsWith(F("HTTP/1")) ) statusCode = getHttpStatusCode(response); // поиск статуса во всех строках, но сработает только в первой
 				if ( response.startsWith(F("Content-Length: ")) ) contentLength = response.substring(16).toInt() + 1; // впереди будет один лишний '\n'
-				if ( response.length() < 2 ) break; // пустая строка отделяет заголовок от тела. Cодержит пару символов '\r\n', один из них уже вырезан
+				if ( response.length() < 2 ) break; // пустая строка отделяет заголовок от тела. Содержит пару символов '\r\n', один из них уже вырезан
 			}
 
 			if (contentLength > 0) {

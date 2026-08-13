@@ -23,7 +23,7 @@
 // Creating an object
 TelegramESP bot;
 
-// В фукции которую вызывает TelegramAPI должна быть реализована логика бота, возможные варианты ответа и реакции
+// В функции которую вызывает TelegramAPI должна быть реализована логика бота, возможные варианты ответа и реакции
 // The function that TelegramAPI calls must implement the bot's logic, possible response options, and reactions.
 String callback(TResult &msg) {
   if (msg.text == "hello") {
@@ -86,7 +86,7 @@ void setup() {
   // Accept messages only from the chat specified in chatId. Only if necessary.
   bot.strict = true;
 
-  // Отправка сообщения в чат по умолчани, установенный setChatID
+  // Отправка сообщения в чат по умолчанию, установленный setChatID
   // Send a message to the default chat set by setChatID
   bot.sendMessage("first message");
 
@@ -102,7 +102,7 @@ void setup() {
 
 void loop() {
 
-  // Проверка новых сообщений. Если есть, то быдет вызвана зарегестрированная callback функция. Обязательно должна быть в loop()
+  // Проверка новых сообщений. Если есть, то будет вызвана зарегистрированная callback функция. Обязательно должна быть в loop()
   // Check for new messages. If there are any, the registered callback function will be called. Must be in loop()
   bot.checkMessage();
 
