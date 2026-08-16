@@ -294,7 +294,7 @@ class TelegramAPI {
 	}
 
 	// поиск параметра не зависимо от наличия "/" в начале и регистра символов
-	bool is_command(const String in, const String command) {
+	bool is_command(String in, String command) {
 		in.toLowerCase();
 		command.toLowerCase();
 		int pos = in.indexOf(command);
