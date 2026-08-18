@@ -293,7 +293,7 @@ class TelegramAPI {
 		return sendMessageToAll(whiteList, message.c_str());
 	}
 
-	// поиск параметра не зависимо от наличия "/" в начале
+	// поиск параметра не зависимо от наличия "/" в начале. Регистр имеет значение.
 	bool is_command(const String& in, const String& command) {
 		int pos = in.indexOf(command);
 		return pos==0 || pos==1;
