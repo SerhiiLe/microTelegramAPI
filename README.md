@@ -272,7 +272,7 @@ The checkMessage method, called without parameters, runs according to its own sc
 
 The "strict" property controls whether a user can reply to all messages or only those from a designated chat. However, this isn't always convenient, so the "isWhitelisted" and "extractFirstNumber" methods have been added, allowing you to build your own security database. The sendMessageToAll method has also been added for sending messages to multiple chats listed in a regular string. The numbers must be separated by a comma. If the number is one, it will work similarly to sendMessage, but the number will be in a String rather than an int64_t.
 
-Разрешение отвечать на все сообщения или только из назначенного чата регулируется свойством "strict". Но это не всегда удобно, по этому добавлены методы "isWhitelisted" и "extractFirstNumber", с помощью которых можно построить свою логику безопасности. Так-же добавлен метод sendMessageToAll для рассылки в несколько чатов по списку в обычной строке. Номера должны быть разделены запятой. Если номер один, то будет работать аналогично sendMessage, но номер не в int64_t, а в String.
+Разрешение отвечать на все сообщения или только из назначенного чата регулируется свойством "strict". Но это не всегда удобно, по этому добавлены методы "isWhitelisted" и "extractFirstNumber", с помощью которых можно построить свою могику безопасности. Так-же добавлен метод sendMessageToAll для рассылки в несколько чатов по списку в обычной строке. Номера должны быть разделены запятой. Если номер один, то будет работать аналогично sendMessage, но номер не в int64_t, а в String.
 
 ### v1.1.1
 
