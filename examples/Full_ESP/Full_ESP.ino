@@ -40,6 +40,12 @@ String callback(TResult &msg) {
     bot.deleteMessage(msg.messageId);
     return "delete 3 message and add one :)";
   }
+  if (msg.text == "edit") {
+    // Редактирование предыдущего сообщения (поддерживает HTML разметку)
+    // Editing previous message (HTML markup auto-detected)
+    bot.editMessage(msg.messageId - 1, "<b>Edited text</b> (HTML supported!)");
+    return "Previous message edited!";
+  }
   if (bot.is_command(msg.text, "menu")) { // both options, with / at the beginning and without ("menu"||"/menu")
     // Добавление меню из двух строк и четырёх пунктов
     // Adding a two-line, four-item menu
@@ -59,8 +65,8 @@ String callback(TResult &msg) {
     "\nFrom: " + msg.from + 
     "\nChatID: " + String(msg.chatId) + 
     "\nMessageID: " + String(msg.messageId) +
-    "\nIn White List: " + String( bot.isWhitelisted(msg.chatId, "1111111,2222222,3333333") ? "yes": "no" ); 
-                                                      // Replace 11111, 222222 and 33333 with real chat IDs
+    "\nTopicID: " + String(msg.threadId) +
+    "\nIn White List: " + String( bot.isWhitelisted(msg.chatId) ? "yes": "no" );
 }
 
 
@@ -83,8 +89,9 @@ void setup() {
   bot.setInterval(10);
   bot.attachCallback(callback);
 
-  // Accept messages only from the chat specified in chatId. Only if necessary.
+  // Accept messages only from chatId or whiteList. Only if necessary.
   bot.strict = true;
+  // bot.whiteList = "1111111, 2222222"; // Список разрешенных чатов / Allowed chat IDs list
 
   // Отправка сообщения в чат по умолчанию, установленный setChatID
   // Send a message to the default chat set by setChatID

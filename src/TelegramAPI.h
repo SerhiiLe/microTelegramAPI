@@ -2,6 +2,8 @@
 #define TELEGRAM_API_HPP
 
 #include <Arduino.h>
+#include <initializer_list>
+#include <vector>
 #define ARDUINOJSON_USE_LONG_LONG 1
 #include <ArduinoJson.h>
 
@@ -27,6 +29,7 @@
 struct TResult {
 	int64_t chatId;
 	int64_t messageId;
+	int64_t threadId = 0; // ID топика супергруппы (0, если обычный чат или общий топик)
 	String text;
 	String from;
 };
@@ -90,13 +93,16 @@ class TelegramAPI {
 		lastUpdateId = -1;
 	}
 
-	// Отправка сообщения в указанный напрямую чат
-	bool sendMessage(int64_t chatId, const char* message) {
+	// Отправка сообщения в указанный напрямую чат (с опциональным threadId топика)
+	bool sendMessage(int64_t chatId, const char* message, int64_t threadId = 0) {
 		if( !chatId ) return false; // не указан ID чата, куда надо отослать сообщение
 		if ( _checkConnection && ! _checkConnection() ) return false; // канал связи недоступен
 
 		JsonDocument doc;
 		doc[F("chat_id")] = chatId;
+		if (threadId > 0) {
+			doc[F("message_thread_id")] = threadId;
+		}
 
 		const char *menu = "[MENU]";
 		char* token = strstr(message, menu);
@@ -108,6 +114,7 @@ class TelegramAPI {
 			token = strstr(source, menu); // ещё раз ищем, но уже в копии
 			*token = 0; // отсечь строку от меню
 			doc[F("text")] = source; // и вставить в запрос как текст
+			if (strstr_P(source, PSTR("</"))) doc[F("parse_mode")] = F("HTML");
 
 			JsonObject reply_markup = doc[F("reply_markup")].to<JsonObject>();
 			source = token + 6; // пропустить [MENU]
@@ -138,6 +145,7 @@ class TelegramAPI {
 			}
 		} else { // просто вставить строку как есть
 			doc[F("text")] = message;
+			if (strstr_P(message, PSTR("</"))) doc[F("parse_mode")] = F("HTML");
 		}
 
 		String jsonPayload;
@@ -147,17 +155,48 @@ class TelegramAPI {
 		ApiResult r = apiRequest(F("sendMessage"), jsonPayload);
 		return r.result; // при отправке в общем то и проверять нечего... Может потом придумаю.
 	}
-	// Отправка сообщения в указанный напрямую чат (String)
-	bool sendMessage(int64_t chatId, const String& message) {
-		return sendMessage(chatId, message.c_str());
+	// Отправка сообщения в указанный напрямую чат (String, с опциональным threadId)
+	bool sendMessage(int64_t chatId, const String& message, int64_t threadId = 0) {
+		return sendMessage(chatId, message.c_str(), threadId);
 	}
-	// Отправка сообщения в указанный setChatID чат
-	bool sendMessage(const char* message) {
-		return _chatId > 0 ? sendMessage(_chatId, message): false;
+	// Отправка сообщения в указанный setChatID чат (с опциональным threadId)
+	bool sendMessage(const char* message, int64_t threadId = 0) {
+		return _chatId > 0 ? sendMessage(_chatId, message, threadId): false;
 	}
-	// Отправка сообщения в указанный setChatID чат (String)
-	bool sendMessage(const String& message) {
-		return _chatId > 0 ? sendMessage(_chatId, message.c_str()): false;
+	// Отправка сообщения в указанный setChatID чат (String, с опциональным threadId)
+	bool sendMessage(const String& message, int64_t threadId = 0) {
+		return _chatId > 0 ? sendMessage(_chatId, message.c_str(), threadId): false;
+	}
+
+	// Редактирование текста ранее отправленного сообщения в указанном чате
+	bool editMessage(int64_t chatId, int64_t messageId, const char* message) {
+		if (!chatId || !messageId) return false;
+		if (_checkConnection && !_checkConnection()) return false;
+
+		JsonDocument doc;
+		doc[F("chat_id")] = chatId;
+		doc[F("message_id")] = messageId;
+		doc[F("text")] = message;
+		if (strstr_P(message, PSTR("</"))) doc[F("parse_mode")] = F("HTML");
+
+		String jsonPayload;
+		serializeJson(doc, jsonPayload);
+		LOG_TELEGRAM_API(println, jsonPayload);
+
+		ApiResult r = apiRequest(F("editMessageText"), jsonPayload);
+		return r.result;
+	}
+	// Редактирование текста сообщения в указанном чате (String)
+	bool editMessage(int64_t chatId, int64_t messageId, const String& message) {
+		return editMessage(chatId, messageId, message.c_str());
+	}
+	// Редактирование текста сообщения в чате по умолчанию (setChatID)
+	bool editMessage(int64_t messageId, const char* message) {
+		return _chatId > 0 ? editMessage(_chatId, messageId, message) : false;
+	}
+	// Редактирование текста сообщения в чате по умолчанию (setChatID, String)
+	bool editMessage(int64_t messageId, const String& message) {
+		return _chatId > 0 ? editMessage(_chatId, messageId, message.c_str()) : false;
 	}
 
 	// Удаление сообщений с указанными ID из указанного чата. Список ID в формате: {20,21,22}
@@ -180,6 +219,28 @@ class TelegramAPI {
 	}
 	// Удаление сообщений с указанными ID из указанного чата по умолчанию. Список ID в формате: {20,21,22}
 	bool deleteMessages(std::initializer_list<int64_t> messageIDs) {
+		return _chatId > 0 ? deleteMessages(_chatId, messageIDs): false;
+	}
+	// Удаление нескольких сообщений из указанного чата (вектор ID)
+	bool deleteMessages(int64_t chatId, const std::vector<int64_t>& messageIDs) {
+		if (!chatId || messageIDs.empty()) return false;
+		
+		JsonDocument doc;
+		doc[F("chat_id")] = chatId;
+		JsonArray message_ids = doc[F("message_ids")].to<JsonArray>();
+		for (auto id : messageIDs) {
+			message_ids.add(id);
+		}
+
+		String jsonPayload;
+		serializeJson(doc, jsonPayload);
+		LOG_TELEGRAM_API(println, jsonPayload);
+
+		ApiResult r = apiRequest(F("deleteMessages"), jsonPayload);
+		return r.result;
+	}
+	// Удаление нескольких сообщений из чата по умолчанию (вектор ID)
+	bool deleteMessages(const std::vector<int64_t>& messageIDs) {
 		return _chatId > 0 ? deleteMessages(_chatId, messageIDs): false;
 	}
 
@@ -232,17 +293,22 @@ class TelegramAPI {
 					TResult r;
 					r.chatId    = msg[F("chat")][F("id")].as<int64_t>();
 					r.messageId = msg[F("message_id")].as<int64_t>();
+					r.threadId  = msg[F("message_thread_id")] | 0;
 					r.text      = msg[F("text")]                  | "";
 					r.from      = msg[F("from")][F("first_name")] | "";
 
 					LOG_TELEGRAM_API(printf_P, PSTR("[MSG] %s (%lld): %s\n"), r.from.c_str(), r.chatId, r.text.c_str());
 					if (_callback) {
-						if (strict && _chatId && r.chatId != _chatId) continue; // пришло сообщение не из чата по умолчанию
+						if (strict) {
+							bool allowed = (_chatId != 0 && r.chatId == _chatId);
+							if (!allowed && whiteList.length() > 0) allowed = isWhitelisted(r.chatId, whiteList);
+							if (!allowed) continue; // сообщение от неавторизованного чата игнорируется
+						}
 						TELEGRAM_DELAY(1);
 						String toSend = _callback(r);
 						if (toSend.length() > 0) {
 							TELEGRAM_DELAY(1); // небольшая задержка между приёмом и отправкой сообщения для сброса watchdog
-							sendMessage(r.chatId, toSend.c_str());
+							sendMessage(r.chatId, toSend.c_str(), r.threadId);
 						}
 					}
 					result++;
@@ -253,54 +319,87 @@ class TelegramAPI {
 		return result;
 	}
 
-	// проверка, есть ли чат в списке разрешенных
-	bool isWhitelisted(const int64_t& chatId, const String& whiteList) {
-		// простая, но не точная реализация
-		return (chatId && whiteList.length() > 0 && whiteList.indexOf(String(chatId)) >= 0);
-	}
-
-	// только первый номер из списка чатов
-	int64_t extractFirstNumber(String whiteList) {
-		whiteList.trim();
-		return whiteList.toInt();
-	}
-
-	// отослать сообщения всем, кто в списке. Список - строка с числами разделённая запятыми
-	bool sendMessageToAll(const String& whiteList, const char* message) {
-		int pos1 = 0, pos2 = 0;
-		pos2 = whiteList.indexOf(",", pos1);
-		while ( pos2 >=0 ) {
-			// нашли запятую :)
-			String tmp = whiteList.substring(pos1, pos2);
+	// Проверка, есть ли чат в переданном списке разрешенных
+	static bool isWhitelisted(const int64_t& chatId, const String& list) {
+		if (!chatId || list.length() == 0) return false;
+		int pos1 = 0;
+		while (pos1 < (int)list.length()) {
+			int pos2 = list.indexOf(',', pos1);
+			String tmp = (pos2 >= 0) ? list.substring(pos1, pos2) : list.substring(pos1);
 			tmp.trim();
-			int64_t id = tmp.toInt();
-			if (id)
-				if (!sendMessage(id, message)) return false;
-			pos1 = pos2+1;
-			pos2 = whiteList.indexOf(",", pos1);
+			if (atoll(tmp.c_str()) == chatId) return true;
+			if (pos2 < 0) break;
+			pos1 = pos2 + 1;
+		}
+		return false;
+	}
+
+	// Проверка, есть ли чат в свойстве whiteList
+	bool isWhitelisted(const int64_t& chatId) const {
+		return isWhitelisted(chatId, whiteList);
+	}
+
+	// Извлечение первого номера из переданного списка чатов
+	static int64_t extractFirstNumber(const String& list) {
+		String trimmed = list;
+		trimmed.trim();
+		return atoll(trimmed.c_str());
+	}
+
+	// Извлечение первого номера из свойства whiteList
+	int64_t extractFirstNumber() const {
+		return extractFirstNumber(whiteList);
+	}
+
+	// Отослать сообщения всем, кто в переданном списке (const char*, с опциональным threadId)
+	bool sendMessageToAll(const String& list, const char* message, int64_t threadId = 0) {
+		int pos1 = 0, pos2 = 0;
+		pos2 = list.indexOf(',', pos1);
+		while ( pos2 >= 0 ) {
+			String tmp = list.substring(pos1, pos2);
+			tmp.trim();
+			int64_t id = atoll(tmp.c_str());
+			if (id) {
+				if (!sendMessage(id, message, threadId)) return false;
+			}
+			pos1 = pos2 + 1;
+			pos2 = list.indexOf(',', pos1);
 		}
 		// Последнее число в списке
-		String tmp = whiteList.substring(pos1);
+		String tmp = list.substring(pos1);
 		tmp.trim();
-		int64_t id = tmp.toInt();
-		if (id)
-			if (!sendMessage(id, message)) return false;
-
+		int64_t id = atoll(tmp.c_str());
+		if (id) {
+			if (!sendMessage(id, message, threadId)) return false;
+		}
 		return true;
 	}
-	// отослать сообщения всем, кто в списке номеров разделённых запятыми
-	bool sendMessageToAll(const String& whiteList, const String& message) {
-		return sendMessageToAll(whiteList, message.c_str());
+
+	// Отослать сообщения всем, кто в переданном списке (String, с опциональным threadId)
+	bool sendMessageToAll(const String& list, const String& message, int64_t threadId = 0) {
+		return sendMessageToAll(list, message.c_str(), threadId);
 	}
 
-	// поиск параметра не зависимо от наличия "/" в начале. Регистр имеет значение.
+	// Отослать сообщения всем, кто в свойстве whiteList (const char*, с опциональным threadId)
+	bool sendMessageToAll(const char* message, int64_t threadId = 0) {
+		return sendMessageToAll(whiteList, message, threadId);
+	}
+
+	// Отослать сообщения всем, кто в свойстве whiteList (String, с опциональным threadId)
+	bool sendMessageToAll(const String& message, int64_t threadId = 0) {
+		return sendMessageToAll(whiteList, message.c_str(), threadId);
+	}
+
+	// Поиск параметра независимо от наличия "/" в начале. Регистр имеет значение.
 	bool is_command(const String& in, const String& command) {
 		int pos = in.indexOf(command);
-		return pos==0 || pos==1;
+		return pos == 0 || pos == 1;
 	}
 
-	// Принимать сообщения только от чата указанного в chatId
+	// Принимать сообщения только от чата указанного в _chatId или номеров из whiteList
 	bool strict = false;
+	// Список разрешенных chat_id (через запятую)
+	String whiteList;
 
 	private:
 
@@ -397,7 +496,7 @@ class TelegramAPI {
 				String description = responseDoc[F("description")] | String(F("Unknown error"));
 				LOG_TELEGRAM_API(printf_P, PSTR("Telegram API error %d: %s\n"), errorCode, description.c_str());
 				if (errorCode == 401) {
-					LOG_TELEGRAM_API(println, PSTR("Invalid bot token, stopping"));
+					LOG_TELEGRAM_API(println, F("Invalid bot token, stopping"));
 					return {false, responseDoc}; // досрочное прерывание, нет смыла повторять запрос, если токен не принят
 				}
 				continue;
@@ -412,7 +511,7 @@ class TelegramAPI {
 	// Проверка соединения
 	bool checkConnection() {
 		if ( !client.connect(apiHost, apiPort) ) {
-			LOG_TELEGRAM_API(println, PSTR("No connection to Telegram server"));
+			LOG_TELEGRAM_API(println, F("No connection to Telegram server"));
 			client.stop();
 			return false;
 		}

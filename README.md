@@ -12,28 +12,36 @@ A simple basic implementation of the Telegram API for Arduino on GSM
 
 ## Description
 
-A very simple library for implementing sending and receiving messages via Telegram.
-It only has a few functions:
-- send messages
-- receive messages
-- display a menu
-- delete messages
+A very simple, lightweight library for sending and receiving messages via Telegram.
+It supports essential bot functionality:
+- send messages (with optional forum topic/thread ID and automatic HTML mode)
+- edit existing messages (`editMessage`)
+- receive messages (with automatic topic routing in callbacks)
+- display and hide reply menus (keyboards)
+- delete individual or multiple messages (`deleteMessage`, `deleteMessages`)
+- strict sender authorization with `strict` and `whiteList`
 
-These are the minimum functions needed to create a bot for remote control of microcontrollers.
+The library is completely transport-agnostic and works seamlessly with GSM modems (SIM800L, LTE), Ethernet, SSLClient, and Wi-Fi.
 
-The library isn't tied to a specific transport and can therefore work with both WiFi and a GSM modem, among other options. To work, the following link is required: "lower-layer transport" -> "SSL encapsulation" -> "the library itself."
-
-Fewer functions mean easier to use and takes up less memory.
+> **Need Non-Blocking Asynchronous Operation or FreeRTOS Background Queue?**  
+> If you are building a project for ESP8266 or ESP32 and need non-blocking I/O, keep-alive connections, background task workers, and interactive send queues, check out [asyncTelegramAPI](https://github.com/SerhiiLe/asyncTelegramAPI/).  
+> `microTelegramAPI` is dedicated to minimal, synchronous, and transport-independent deployments.
 
 ## Описание
-Очень простая библиотека для реализации отправки приёма сообщений через Телеграм.  
-Умеет всего несколько функций:
-- отправлять сообщения
-- принимать сообщения
-- отображать меню
-- удалять сообщения
+Очень простая и легковесная библиотека для отправки и приёма сообщений через Телеграм.  
+Библиотека предоставляет ключевой набор функций:
+- отправка сообщений (с поддержкой топиков/тредов супергрупп и автоопределением HTML)
+- редактирование отправленных сообщений (`editMessage`)
+- приём сообщений (с автоматической маршрутизацией ответов в тот же тред)
+- отображение и скрытие клавиатурного меню
+- удаление одиночных и группы сообщений (`deleteMessage`, `deleteMessages`)
+- фильтрация доступа по `strict` и белому списку `whiteList`
 
-Это функции минимально необходимые для создания бота для дистанционного управления микроконтроллерами.
+Библиотека не привязана к конкретному транспорту и работает с GSM модемами (SIM800L, LTE), Ethernet, SSLClient и Wi-Fi.
+
+> **Нужна неблокирующая асинхронность или очередь FreeRTOS в фоне?**  
+> Если проект разрабатывается для ESP8266 или ESP32 и вам требуются неблокирующий опрос, постоянные keep-alive соединения, фоновые очереди FreeRTOS и доставка по таймерам — используйте библиотеку [asyncTelegramAPI](https://github.com/SerhiiLe/asyncTelegramAPI/).  
+> `microTelegramAPI` остаётся компактным, строго синхронным и универсальным решением для любого транспорта.
 
 Несмотря на то, что существует множество других библиотек, я не смог найти ту, которая сможет работать с любым транспортом. Конкретно мне нужна была работа с GSM модемом SIM800L. Пришлось делать самому. Библиотека, несмотря на простоту немного сложнее в использовании из-за того, что надо самостоятельно настраивать транспорт.
 
@@ -135,92 +143,108 @@ TelegramAPI<SSLClient> bot(securePresentationLayer);
 
 ```cpp
 // Конструктор / Constructor
-TelegramAPI(SSLClient& sslClient)
+TelegramAPI(SSLTransport& sslClient)
 
 // Install a token, it won't work without it.
-// установить токен, без него работать не будет	(String)
+// Установить токен, без него работать не будет (String)
 void setBotToken(const String& token)
-// установить токен, без него работать не будет
+// Установить токен, без него работать не будет
 void setBotToken(const char* token)
 
-// Set the default chat ID. This is only used for sending messages; it replies to everyone.
-// установить ID чата по умолчанию. Именно в него будут отправляться уведомления. Отвечать бот будет тот чат из которого пришел запрос
+// Set the default chat ID. This is used for default sends.
+// Установить ID чата по умолчанию. Именно в него будут отправляться уведомления.
 void setChatID(int64_t chatID)
 
-// Polling period in seconds. Each installation resets the countdown timer.
-// период опроса в секундах. Каждая установка сбрасывает время отсчёта.
+// Polling period in seconds. Each call resets the timer.
+// Период опроса в секундах. Каждая установка сбрасывает время отсчёта.
 void setInterval(int interval)
 
-// set a delay until the next poll, one-time, in seconds. Calling without arguments resets the interval count.
-// выставить задержку до следующего срабатывания, разово, в секундах. Вызов без аргументов сбрасывает отсчёт интервала.
+// Set a one-time delay until the next poll in seconds. Calling without arguments resets the interval.
+// Выставить задержку до следующего срабатывания, разово, в секундах. Вызов без аргументов сбрасывает отсчёт интервала.
 void setNext(uint32_t next = 0)
 
-// attach a message handler
-// подключение обработчика сообщений
+// Attach an incoming message handler callback
+// Подключение обработчика сообщений
 void attachCallback(String (*handler)(TResult& tr))
-// отключение обработчика сообщений
+// Отключение обработчика сообщений
 void detachCallback()
 
-// Attaching a connection status check function
-// подключение функции проверки состояния соединения
+// Attach connection health check function
+// Подключение функции проверки состояния соединения
 void attachCheckConnection(bool (*handler)())
-// отключение функции проверки состояния соединения
+// Отключение функции проверки состояния соединения
 void detachCheckConnection()
 
-// skip unread messages
-// пропустить непрочитанные сообщения
+// Skip unread messages
+// Пропустить непрочитанные сообщения
 void skipUpdates()
 
-// Sending a message to a specified chat
-// Отправка сообщения в указанный напрямую чат
-bool sendMessage(int64_t chatId, const char* message)
-// Отправка сообщения в указанный напрямую чат (String)
-bool sendMessage(int64_t chatId, const String message)
-// Отправка сообщения в указанный setChatID чат
-bool sendMessage(const char* message)
-// Отправка сообщения в указанный setChatID чат (String)
-bool sendMessage(const String message)
+// Sending a message to a specified chat (with optional forum threadId)
+// Отправка сообщения в указанный напрямую чат (с опциональным threadId)
+bool sendMessage(int64_t chatId, const char* message, int64_t threadId = 0)
+bool sendMessage(int64_t chatId, const String& message, int64_t threadId = 0)
+// Sending a message to the default chat set by setChatID (with optional forum threadId)
+// Отправка сообщения в указанный setChatID чат (с опциональным threadId)
+bool sendMessage(const char* message, int64_t threadId = 0)
+bool sendMessage(const String& message, int64_t threadId = 0)
+
+// Editing previously sent message text (HTML tags are auto-detected)
+// Редактирование текста ранее отправленного сообщения (HTML теги определяются автоматически)
+bool editMessage(int64_t chatId, int64_t messageId, const char* message)
+bool editMessage(int64_t chatId, int64_t messageId, const String& message)
+bool editMessage(int64_t messageId, const char* message)
+bool editMessage(int64_t messageId, const String& message)
 
 // Delete messages with the specified IDs from the specified chat
-// Удаление сообщений с указанными ID из указанного чата. Список ID в формате: {20,21,22}
+// Удаление сообщений с указанными ID из указанного чата. Список ID в формате: {20,21,22} или std::vector
 bool deleteMessages(int64_t chatId, std::initializer_list<int64_t> messageIDs)
-// Удаление сообщений с указанными ID из указанного чата по умолчанию. Список ID в формате: {20,21,22}
 bool deleteMessages(std::initializer_list<int64_t> messageIDs)
+bool deleteMessages(int64_t chatId, const std::vector<int64_t>& messageIDs)
+bool deleteMessages(const std::vector<int64_t>& messageIDs)
+
+// Delete a single message by ID
 // Удаление одного сообщения по его ID из чата с chatId
 bool deleteMessage(int64_t chatId, int64_t messageId)
-// Удаление одного сообщения по его ID из чата с chat_id по умолчанию
+// Удаление одного сообщения по его ID из чата по умолчанию
 bool deleteMessage(int64_t messageId)
 
-// Check for new messages. By this point, the message handling function attachCallback must be attached.
-// Returns the number of messages received, or -1 if an error occurred.
-// Проверка новых сообщений. К этому моменту должна быть установлена функция для обработки сообщений attach
-// возвращает число полученных сообщений, или -1 если ошибка
-int checkMessage(bool force=false)
+// Check for new messages. By this point, attachCallback must be configured.
+// Returns the number of messages received, 0 if not due, or negative on error.
+// Проверка новых сообщений. К этому моменту должна быть установлена callback функция.
+// Возвращает число полученных сообщений, 0 если время не пришло, или <0 если ошибка.
+int checkMessage(bool force = false)
 
-// Additional, optional methods for working with lists of chat numbers
-// Дополнительные, не обязательные методы для работы со списками номеров чатов
+// Methods for whitelist filtering and bulk sending:
+// Методы для фильтрации по белому списку и рассылки:
 
-// check if the chat is in the allowed list
-// Проверка, есть ли чат в списке разрешенных
-bool isWhitelisted(const int64_t& chatId, const String& whiteList)
+// Check if chatId is in a given list or in bot.whiteList
+// Проверка, есть ли чат в переданном списке или в свойстве whiteList
+static bool isWhitelisted(const int64_t& chatId, const String& list)
+bool isWhitelisted(const int64_t& chatId) const
 
-// Only the first number from the chat list
-// Только первый номер из списка чатов
-int64_t extractFirstNumber(String whiteList)
+// Extract the first ID from a given list or from bot.whiteList
+// Только первый номер из переданного списка или из свойства whiteList
+static int64_t extractFirstNumber(const String& list)
+int64_t extractFirstNumber() const
 
-// Send messages to everyone on the list. List is a string of numbers separated by commas.
-// Отослать сообщения всем, кто в списке. Список - строка с числами разделённая запятыми
-bool sendMessageToAll(const String& whiteList, const char* message)
-// Отослать сообщения всем, кто в списке номеров разделённых запятыми
-bool sendMessageToAll(const String& whiteList, const String& message)
+// Broadcast messages to all chat IDs in comma-separated list
+// Отослать сообщения всем, кто в списке номеров через запятую
+bool sendMessageToAll(const String& list, const char* message, int64_t threadId = 0)
+bool sendMessageToAll(const String& list, const String& message, int64_t threadId = 0)
+bool sendMessageToAll(const char* message, int64_t threadId = 0)
+bool sendMessageToAll(const String& message, int64_t threadId = 0)
 
-// both options, with / at the beginning and without
-// поиск параметра не зависимо от наличия "/" в начале
+// Check if string starts with command (with or without '/')
+// Поиск команды независимо от наличия '/' в начале
 bool is_command(const String& in, const String& command)
 
-// Accept messages only from the chat specified in chatId
-// Принимать сообщения только от чата указанного в chatId
-bool strict = false
+// Restrict incoming messages: if strict == true, only chatId OR whiteList are allowed
+// Принимать сообщения только от чата _chatId или номеров из whiteList
+bool strict = false;
+
+// Comma-separated list of allowed chat IDs
+// Список разрешенных chat_id (через запятую)
+String whiteList;
 ```
 
 There's no separate method for adding a menu (keyboard). Instead, you need to use the [MENU] tag in your bot's message.
@@ -257,6 +281,7 @@ String telegramCallback(TResult& msg);
 struct TResult {
 	int64_t chatId;
 	int64_t messageId;
+	int64_t threadId = 0; // ID топика супергруппы (0, если обычный чат) / Forum topic ID
 	String text;
 	String from;
 };
@@ -268,11 +293,31 @@ The checkMessage method, called without parameters, runs according to its own sc
 
 ## Changes
 
-### v1.1.0
+### v1.2.0
 
-The "strict" property controls whether a user can reply to all messages or only those from a designated chat. However, this isn't always convenient, so the "isWhitelisted" and "extractFirstNumber" methods have been added, allowing you to build your own security database. The sendMessageToAll method has also been added for sending messages to multiple chats listed in a regular string. The numbers must be separated by a comma. If the number is one, it will work similarly to sendMessage, but the number will be in a String rather than an int64_t.
+- Added message editing: `editMessage(chatId, messageId, text)` and `editMessage(messageId, text)` with automatic HTML mode detection.
+- Automatic HTML formatting: detecting `</` in the message automatically applies `"parse_mode": "HTML"` in `sendMessage` and `editMessage`.
+- Telegram forum supergroup topic support: `threadId` field in `TResult`, `threadId` parameter in `sendMessage`, and automatic topic replies in callbacks.
+- Added `std::vector<int64_t>` overloads for `deleteMessages`.
+- Enhanced Whitelist and Access Control:
+  - Public `whiteList` property.
+  - Parameterless member overloads `isWhitelisted(chatId)` and `extractFirstNumber()`.
+  - 64-bit ID parsing via `atoll()` replacing naive substring matching.
+  - In `strict` mode, messages are accepted if they match `_chatId` OR are present in `whiteList`.
+- Flash and Memory Optimizations: JSON keys and format strings stored in Flash with `F()` and `PSTR()`, character searching via `indexOf(',', pos)`.
 
-Разрешение отвечать на все сообщения или только из назначенного чата регулируется свойством "strict". Но это не всегда удобно, по этому добавлены методы "isWhitelisted" и "extractFirstNumber", с помощью которых можно построить свою логику безопасности. Так-же добавлен метод sendMessageToAll для рассылки в несколько чатов по списку в обычной строке. Номера должны быть разделены запятой. Если номер один, то будет работать аналогично sendMessage, но номер не в int64_t, а в String.
+---
+
+- Добавлено редактирование сообщений: `editMessage(chatId, messageId, text)` и `editMessage(messageId, text)` с автоопределением HTML.
+- Автоматический режим HTML: наличие тега `</` в тексте сообщения автоматически включает `"parse_mode": "HTML"` в `sendMessage` и `editMessage`.
+- Поддержка топиков/тредов форумов Telegram: поле `threadId` в структуре `TResult`, параметр `threadId` в `sendMessage`, автоматическая отправка ответов callback в тот же топик.
+- Добавлена перегрузка `deleteMessages` для `std::vector<int64_t>`.
+- Улучшенный белый список и контроль доступа:
+  - Публичное свойство `whiteList`.
+  - Перегрузки `isWhitelisted(chatId)` и `extractFirstNumber()` без параметров (использующие `whiteList`).
+  - Парсинг 64-битных ID через `atoll()` вместо неточного строкового поиска подстроки.
+  - В режиме `strict` бот отвечает, если сообщение пришло из чата по умолчанию `_chatId` ИЛИ из списка `whiteList`.
+- Оптимизация памяти: строковые константы и ключи JSON вынесены во Flash с помощью `F()` и `PSTR()`, поиск разделителей через `indexOf(',', pos)`.
 
 ### v1.1.1
 
@@ -281,6 +326,12 @@ Added an optional setNext method for setting a one-time delay before the next se
 
 Добавлен необязательный метод is_command, который позволяет находить команды как с / в начале, так и без.
 Добавлен необязательный метод setNext, для разовой установки задержки перед очередным опросом сервера.
+
+### v1.1.0
+
+The "strict" property controls whether a user can reply to all messages or only those from a designated chat. However, this isn't always convenient, so the "isWhitelisted" and "extractFirstNumber" methods have been added, allowing you to build your own security database. The sendMessageToAll method has also been added for sending messages to multiple chats listed in a regular string. The numbers must be separated by a comma. If the number is one, it will work similarly to sendMessage, but the number will be in a String rather than an int64_t.
+
+Разрешение отвечать на все сообщения или только из назначенного чата регулируется свойством "strict". Но это не всегда удобно, по этому добавлены методы "isWhitelisted" и "extractFirstNumber", с помощью которых можно построить свою логику безопасности. Так-же добавлен метод sendMessageToAll для рассылки в несколько чатов по списку в обычной строке. Номера должны быть разделены запятой. Если номер один, то будет работать аналогично sendMessage, но номер не в int64_t, а в String.
 
 ## LICENSE
 
