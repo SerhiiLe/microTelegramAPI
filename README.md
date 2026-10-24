@@ -163,6 +163,16 @@ void setInterval(int interval)
 // Выставить задержку до следующего срабатывания, разово, в секундах. Вызов без аргументов сбрасывает отсчёт интервала.
 void setNext(uint32_t next = 0)
 
+// Configure interactive window: temporarily accelerate polling interval during activity
+// Настройка интерактивного окна: временное ускорение опроса при активности
+// window - duration of the active window in seconds (0 = disabled)
+// fastInterval - polling interval in seconds during active window (default: 1)
+void setInteractiveWindow(uint32_t window, uint32_t fastInterval = 1)
+
+// Manually trigger or extend interactive accelerated polling window
+// Активация или продление окна интерактивного (ускоренного) опроса вручную
+void triggerInteractive()
+
 // Attach an incoming message handler callback
 // Подключение обработчика сообщений
 void attachCallback(String (*handler)(TResult& tr))
@@ -295,6 +305,7 @@ The checkMessage method, called without parameters, runs according to its own sc
 
 ### v1.2.0
 
+- Added interactive window: `setInteractiveWindow(window, fastInterval)` and `triggerInteractive()` to temporarily accelerate polling frequency (e.g. 1-2s) upon activity or message send, keeping idle GSM/LTE traffic minimal (e.g. 60s).
 - Added message editing: `editMessage(chatId, messageId, text)` and `editMessage(messageId, text)` with automatic HTML mode detection.
 - Automatic HTML formatting: detecting `</` in the message automatically applies `"parse_mode": "HTML"` in `sendMessage` and `editMessage`.
 - Telegram forum supergroup topic support: `threadId` field in `TResult`, `threadId` parameter in `sendMessage`, and automatic topic replies in callbacks.
@@ -308,6 +319,7 @@ The checkMessage method, called without parameters, runs according to its own sc
 
 ---
 
+- Добавлена поддержка интерактивного окна: `setInteractiveWindow(window, fastInterval)` и `triggerInteractive()` для динамического ускорения опроса (например, до 1-2 сек) во время диалога или после отправки сообщения при сохранении экономного интервала в покое (например, 60 сек).
 - Добавлено редактирование сообщений: `editMessage(chatId, messageId, text)` и `editMessage(messageId, text)` с автоопределением HTML.
 - Автоматический режим HTML: наличие тега `</` в тексте сообщения автоматически включает `"parse_mode": "HTML"` в `sendMessage` и `editMessage`.
 - Поддержка топиков/тредов форумов Telegram: поле `threadId` в структуре `TResult`, параметр `threadId` в `sendMessage`, автоматическая отправка ответов callback в тот же топик.

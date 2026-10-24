@@ -87,6 +87,7 @@ void setup() {
   bot.setBotToken(BOT_TOKEN);
   bot.setChatID(CHAT_ID);
   bot.setInterval(10);
+  // bot.setInteractiveWindow(60, 2); // Ускорение опроса до 2 сек на 60 сек во время активности / 60s window with 2s polling
   bot.attachCallback(callback);
 
   // Accept messages only from chatId or whiteList. Only if necessary.

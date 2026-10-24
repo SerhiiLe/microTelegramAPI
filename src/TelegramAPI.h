@@ -68,6 +68,25 @@ class TelegramAPI {
 		nextUpdate = millis() + (next ? next * 1000UL: updatePeriod);
 	}
 
+	// Настройка интерактивного окна: временное ускорение опроса при активности
+	// window - длительность окна в секундах после взаимодействия (0 - выключено)
+	// fastInterval - ускоренный интервал опроса в секундах (по умолчанию 1 сек)
+	void setInteractiveWindow(uint32_t window, uint32_t fastInterval = 1) {
+		interactiveWindowDuration = window * 1000UL;
+		interactivePeriod = (fastInterval >= 1 ? fastInterval : 1) * 1000UL;
+	}
+
+	// Активация или продление окна интерактивного (ускоренного) опроса
+	void triggerInteractive() {
+		if (interactiveWindowDuration > 0) {
+			interactiveWindowEnd = millis() + interactiveWindowDuration;
+			uint32_t nextFast = millis() + interactivePeriod;
+			if ((int32_t)(nextUpdate - nextFast) > 0) {
+				nextUpdate = nextFast;
+			}
+		}
+	}
+
 	// подключение обработчика сообщений
     void attachCallback(String (*handler)(TResult& tr)) {
         _callback = handler;
@@ -153,6 +172,7 @@ class TelegramAPI {
 		LOG_TELEGRAM_API(println, jsonPayload);
 
 		ApiResult r = apiRequest(F("sendMessage"), jsonPayload);
+		if (r.result) triggerInteractive();
 		return r.result; // при отправке в общем то и проверять нечего... Может потом придумаю.
 	}
 	// Отправка сообщения в указанный напрямую чат (String, с опциональным threadId)
@@ -304,6 +324,7 @@ class TelegramAPI {
 							if (!allowed && whiteList.length() > 0) allowed = isWhitelisted(r.chatId, whiteList);
 							if (!allowed) continue; // сообщение от неавторизованного чата игнорируется
 						}
+						triggerInteractive();
 						TELEGRAM_DELAY(1);
 						String toSend = _callback(r);
 						if (toSend.length() > 0) {
@@ -535,9 +556,13 @@ class TelegramAPI {
 		}
 		return false;
 	}
-	// сброс таймера на установленный интервал
+	// сброс таймера на установленный интервал (с учётом интерактивного окна)
 	void resetTimer() {
-		nextUpdate = millis() + updatePeriod;
+		uint32_t period = updatePeriod;
+		if (interactiveWindowDuration > 0 && (int32_t)(interactiveWindowEnd - millis()) > 0) {
+			period = interactivePeriod;
+		}
+		nextUpdate = millis() + period;
 	}
 
 	SSLTransport& client;    // Ссылка на SSLClient
@@ -550,6 +575,9 @@ class TelegramAPI {
 	int64_t lastUpdateId = 0, _chatId = 0;
 	uint32_t nextUpdate = 0;
 	uint32_t updatePeriod = 10000;
+	uint32_t interactivePeriod = 1000;
+	uint32_t interactiveWindowDuration = 0;
+	uint32_t interactiveWindowEnd = 0;
 	bool _overflow = false;
 
 	const char* apiHost; // = "api.telegram.org";
