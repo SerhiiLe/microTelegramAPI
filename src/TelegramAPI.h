@@ -207,9 +207,6 @@ class TelegramAPI {
 		LOG_TELEGRAM_API(println, jsonPayload);
 
 		ApiResult r = apiRequest(F("editMessageText"), jsonPayload);
-		if (r.result) {
-			_lastMessageId = messageId;
-		}
 		return r.result;
 	}
 	// Редактирование текста сообщения в указанном чате (String)
@@ -225,12 +222,7 @@ class TelegramAPI {
 		return _chatId > 0 ? editMessage(_chatId, messageId, message.c_str()) : false;
 	}
 
-	// Получение ID последнего отправленного или отредактированного сообщения
-	int64_t lastMessageId() const {
-		return _lastMessageId;
-	}
-
-	// Получение ID последнего отправленного или отредактированного сообщения (алиас)
+	// Получение ID последнего отправленного сообщения
 	int64_t getLastMessageId() const {
 		return _lastMessageId;
 	}

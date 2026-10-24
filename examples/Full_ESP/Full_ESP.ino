@@ -42,9 +42,9 @@ String callback(TResult &msg) {
   }
   if (msg.text == "edit") {
     // Редактирование последнего отправленного ботом сообщения
-    // Editing the bot's last sent message using lastMessageId()
-    if (bot.lastMessageId() > 0) {
-      bot.editMessage(bot.lastMessageId(), "<b>Edited text</b> (HTML supported!)");
+    // Editing the bot's last sent message using getLastMessageId()
+    if (bot.getLastMessageId() > 0) {
+      bot.editMessage(bot.getLastMessageId(), "<b>Edited text</b> (HTML supported!)");
       return "Last message edited!";
     }
     return "No previous message to edit";
