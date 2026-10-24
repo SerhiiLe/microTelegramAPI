@@ -262,6 +262,9 @@ bool editMessage(int64_t chatId, int64_t messageId, const String& message);
 // Редактирование в чате по умолчанию (setChatID)
 bool editMessage(int64_t messageId, const char* message);
 bool editMessage(int64_t messageId, const String& message);
+
+// Получение ID последнего отправленного или отредактированного сообщения
+int64_t id = bot.lastMessageId();    // или bot.getLastMessageId()
 ```
 
 ---
@@ -372,6 +375,7 @@ bot.sendMessage("Меню скрыто[MENU]");
 ### v1.2.0
 - **Интерактивное окно (`setInteractiveWindow`)**: адаптивное ускорение опроса (до 1–2 сек) во время диалога или после отправки сообщения при сохранении экономного интервала в покое (до 60 сек).
 - **Редактирование сообщений**: методы `editMessage` для одиночных чатов и чата по умолчанию.
+- **Получение ID последнего сообщения**: методы `lastMessageId()` и `getLastMessageId()` для сохранения и редактирования отправленных сообщений.
 - **Авто-HTML**: автоматическая установка `"parse_mode": "HTML"` при наличии тега `</`.
 - **Топики супергрупп**: поддержка `threadId` в структуре `TResult` и параметрах `sendMessage`.
 - **Групповое удаление**: перегрузки `deleteMessages` для `std::vector<int64_t>`.

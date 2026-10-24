@@ -262,6 +262,9 @@ bool editMessage(int64_t chatId, int64_t messageId, const String& message);
 // Edit message in default chat (setChatID)
 bool editMessage(int64_t messageId, const char* message);
 bool editMessage(int64_t messageId, const String& message);
+
+// Get the ID of the last sent or edited message
+int64_t id = bot.lastMessageId();    // or bot.getLastMessageId()
 ```
 
 ---
@@ -372,6 +375,7 @@ For an in-depth breakdown of the internal design, network abstraction layers, C+
 ### v1.2.0
 - **Interactive Window (`setInteractiveWindow`)**: adaptive accelerated polling (e.g. 1–2s) during conversations and after transmission, maintaining minimal idle traffic (e.g. 60s).
 - **Message Editing**: added `editMessage` for custom chats and default chat.
+- **Last Message ID**: added `lastMessageId()` and `getLastMessageId()` to retrieve and edit the bot's sent messages.
 - **Auto HTML**: automatic `"parse_mode": "HTML"` detection upon encountering `</`.
 - **Forum Topics**: added `threadId` support to `TResult` and `sendMessage`.
 - **Bulk Deletion**: `deleteMessages` overload for `std::vector<int64_t>`.

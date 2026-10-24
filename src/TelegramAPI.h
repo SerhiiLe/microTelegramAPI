@@ -172,7 +172,10 @@ class TelegramAPI {
 		LOG_TELEGRAM_API(println, jsonPayload);
 
 		ApiResult r = apiRequest(F("sendMessage"), jsonPayload);
-		if (r.result) triggerInteractive();
+		if (r.result) {
+			_lastMessageId = r.json[F("result")][F("message_id")] | 0;
+			triggerInteractive();
+		}
 		return r.result; // при отправке в общем то и проверять нечего... Может потом придумаю.
 	}
 	// Отправка сообщения в указанный напрямую чат (String, с опциональным threadId)
@@ -204,6 +207,9 @@ class TelegramAPI {
 		LOG_TELEGRAM_API(println, jsonPayload);
 
 		ApiResult r = apiRequest(F("editMessageText"), jsonPayload);
+		if (r.result) {
+			_lastMessageId = messageId;
+		}
 		return r.result;
 	}
 	// Редактирование текста сообщения в указанном чате (String)
@@ -217,6 +223,16 @@ class TelegramAPI {
 	// Редактирование текста сообщения в чате по умолчанию (setChatID, String)
 	bool editMessage(int64_t messageId, const String& message) {
 		return _chatId > 0 ? editMessage(_chatId, messageId, message.c_str()) : false;
+	}
+
+	// Получение ID последнего отправленного или отредактированного сообщения
+	int64_t lastMessageId() const {
+		return _lastMessageId;
+	}
+
+	// Получение ID последнего отправленного или отредактированного сообщения (алиас)
+	int64_t getLastMessageId() const {
+		return _lastMessageId;
 	}
 
 	// Удаление сообщений с указанными ID из указанного чата. Список ID в формате: {20,21,22}
@@ -572,7 +588,7 @@ class TelegramAPI {
 	const int retryDelay = 1000; // Задержка между попытками (мс)
 	const int requestTimeout = 35000; // Таймаут для long polling (35 секунд, учитывая timeout=30)
 
-	int64_t lastUpdateId = 0, _chatId = 0;
+	int64_t lastUpdateId = 0, _chatId = 0, _lastMessageId = 0;
 	uint32_t nextUpdate = 0;
 	uint32_t updatePeriod = 10000;
 	uint32_t interactivePeriod = 1000;

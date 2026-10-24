@@ -41,10 +41,13 @@ String callback(TResult &msg) {
     return "delete 3 message and add one :)";
   }
   if (msg.text == "edit") {
-    // Редактирование предыдущего сообщения (поддерживает HTML разметку)
-    // Editing previous message (HTML markup auto-detected)
-    bot.editMessage(msg.messageId - 1, "<b>Edited text</b> (HTML supported!)");
-    return "Previous message edited!";
+    // Редактирование последнего отправленного ботом сообщения
+    // Editing the bot's last sent message using lastMessageId()
+    if (bot.lastMessageId() > 0) {
+      bot.editMessage(bot.lastMessageId(), "<b>Edited text</b> (HTML supported!)");
+      return "Last message edited!";
+    }
+    return "No previous message to edit";
   }
   if (bot.is_command(msg.text, "menu")) { // both options, with / at the beginning and without ("menu"||"/menu")
     // Добавление меню из двух строк и четырёх пунктов
