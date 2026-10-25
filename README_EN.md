@@ -1,11 +1,11 @@
 # microTelegramAPI
 
-**English version** | [Русская версия](README.md)
-
 [![PlatformIO](https://img.shields.io/badge/PlatformIO-Compatible-orange.svg)](https://platformio.org/)
 [![Framework](https://img.shields.io/badge/Framework-Arduino-blue.svg)](https://www.arduino.cc/)
 [![License: LGPL 3.0](https://img.shields.io/badge/License-LGPL_3.0-green.svg)](LICENSE)
 [![Version](https://img.shields.io/badge/version-1.2.0-blue.svg)](library.properties)
+
+**English version** | [Русская версия](README.md)
 
 **microTelegramAPI** is a compact, lightweight, and 100% synchronous Telegram Bot API library for Arduino, ESP8266, ESP32, and STM32 microcontrollers.
 

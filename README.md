@@ -1,11 +1,15 @@
 # microTelegramAPI
 
-[English version](README_EN.md) | **Русская версия**
-
 [![PlatformIO](https://img.shields.io/badge/PlatformIO-Compatible-orange.svg)](https://platformio.org/)
 [![Framework](https://img.shields.io/badge/Framework-Arduino-blue.svg)](https://www.arduino.cc/)
 [![License: LGPL 3.0](https://img.shields.io/badge/License-LGPL_3.0-green.svg)](LICENSE)
 [![Version](https://img.shields.io/badge/version-1.2.0-blue.svg)](library.properties)
+
+**microTelegramAPI** is a compact, lightweight, and 100% synchronous Telegram Bot API library for Arduino, ESP8266, ESP32, and STM32 microcontrollers.
+
+The distinctive feature of this library is **complete network transport independence**. It is engineered to operate reliably not only over Wi-Fi, but also over cellular GSM/GPRS/LTE modems (SIM800L, SIM7000, SIM7600, etc.), wired Ethernet, or custom data links using SSLClient encryption.
+
+[English version](README_EN.md) | **Русская версия**
 
 **microTelegramAPI** — компактная, легковесная и 100% синхронная библиотека Telegram Bot API для микроконтроллеров Arduino, ESP8266, ESP32 и STM32. 
 
