@@ -60,6 +60,8 @@ class TelegramAPI {
 	// период опроса в секундах. Каждая установка сбрасывает время отсчёта.
 	void setInterval(int interval) {
 		if ( interval > 1 ) updatePeriod = interval * 1000UL; // чаще, чем раз в секунду
+		interactiveWindowDuration = 0;
+		interactiveWindowEnd = 0;
 		resetTimer();
 	}
 
