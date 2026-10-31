@@ -11,7 +11,8 @@
 
 class TelegramESP : public TelegramAPI<BearSSL::WiFiClientSecure> {
 
-#elif defined(ESP32)
+#else // ESP32 Family
+
 #include <WiFi.h>
 #include <WiFiClientSecure.h>
 
@@ -31,7 +32,7 @@ public:
 
     #if defined(ESP8266)
     BearSSL::WiFiClientSecure client;
-    #elif defined(ESP32)
+    #else // ESP32
     WiFiClientSecure client;
     #endif
 
